@@ -1,16 +1,14 @@
-// routes/loan.js
 const express = require('express');
 const router = express.Router();
 const Loan = require('../models/Loan');
 
 // Route to create a new loan
-
 router.post('/create', async (req, res) => {
   try {
     const { amount, term } = req.body;
 
     const weeklyRepayment = amount / term;
-    // console.log(weeklyRepayment);
+    
     const repayments = [];
     const startDate = new Date();
     for (let i = 0; i < term; i++) {
@@ -21,7 +19,7 @@ router.post('/create', async (req, res) => {
           amount: weeklyRepayment,
           status: 'PENDING',
         });
-      }
+    }
 
     const loan = new Loan({
       amount,
@@ -38,14 +36,28 @@ router.post('/create', async (req, res) => {
   }
 });
 
-
-// Route to view loans for a specific user (if user authentication is implemented)
-router.get('/user/:userId', async (req, res) => {
+// Route to view all loans
+router.get('/all', async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const loans = await Loan.find({ userId });
-
+    const loans = await Loan.find();
     res.status(200).json(loans);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to view a specific loan by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const loanId = req.params.id;
+    const loan = await Loan.findById(loanId);
+
+    if (!loan) {
+      return res.status(404).json({ error: 'Loan not found' });
+    }
+
+    res.status(200).json(loan);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
@@ -74,7 +86,6 @@ router.patch('/approve/:loanId', async (req, res) => {
 });
 
 // Route to add a repayment
-
 router.post('/repay/:loanId', async (req, res) => {
     try {
       const loanId = req.params.loanId;
@@ -91,6 +102,7 @@ router.post('/repay/:loanId', async (req, res) => {
       if (!nextRepayment) {
         return res.status(400).json({ error: 'All repayments are already paid' });
       }
+      
       if (amount >= nextRepayment.amount) {
         nextRepayment.status = 'PAID';
 
@@ -109,7 +121,5 @@ router.post('/repay/:loanId', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
-
 
 module.exports = router;
